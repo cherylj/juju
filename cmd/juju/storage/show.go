@@ -17,15 +17,6 @@ Show extended information about storage instances.
 Storage instances to display are specified by storage ids.
 
 * note use of positional arguments
-
-options:
--e, --environment (= "")
-   juju environment to operate in
--o, --output (= "")
-   specify an output file
---format (= yaml)
-   specify output format (json|yaml)
-[space separated storage ids]
 `
 
 // ShowCommand attempts to release storage instance.

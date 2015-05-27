@@ -14,14 +14,6 @@ import (
 
 const ListCommandDoc = `
 List information about storage instances.
-
-options:
--e, --environment (= "")
-   juju environment to operate in
--o, --output (= "")
-   specify an output file
---format (= tabular)
-   specify output format (json|tabular|yaml)
 `
 
 // ListCommand returns storage instances.
