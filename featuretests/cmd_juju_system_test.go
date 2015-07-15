@@ -21,6 +21,7 @@ import (
 	"github.com/juju/juju/feature"
 	"github.com/juju/juju/juju"
 	jujutesting "github.com/juju/juju/juju/testing"
+	"github.com/juju/juju/state"
 	"github.com/juju/juju/testing"
 	"github.com/juju/juju/testing/factory"
 )
@@ -124,6 +125,20 @@ func (s *cmdSystemSuite) TestSystemDestroy(c *gc.C) {
 
 	st.Close()
 	s.run(c, "destroy", "dummyenv", "-y", "--destroy-all-environments")
+
+	store, err := configstore.Default()
+	_, err = store.ReadInfo("dummyenv")
+	c.Assert(err, jc.Satisfies, errors.IsNotFound)
+}
+
+func (s *cmdSystemSuite) TestSystemKill(c *gc.C) {
+	st := s.Factory.MakeEnvironment(c, &factory.EnvParams{
+		Name: "foo",
+	})
+	st.SwitchBlockOn(state.DestroyBlock, "TestBlockDestroyEnvironment")
+	st.Close()
+
+	s.run(c, "kill", "dummyenv", "-y")
 
 	store, err := configstore.Default()
 	_, err = store.ReadInfo("dummyenv")
