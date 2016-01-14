@@ -13,7 +13,6 @@ import (
 
 	"github.com/juju/juju/feature"
 	"github.com/juju/juju/juju"
-	"github.com/juju/juju/juju/osenv"
 	_ "github.com/juju/juju/provider/all"
 )
 
@@ -55,12 +54,4 @@ func Main(args []string) {
 	}
 
 	os.Exit(cmd.Main(metadatacmd, ctx, args[1:]))
-}
-
-func init() {
-	featureflag.SetFlagsFromEnvironment(osenv.JujuFeatureFlagEnvKey)
-}
-
-func main() {
-	Main(os.Args)
 }
