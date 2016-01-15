@@ -42,11 +42,16 @@ func (azInstance *azureInstance) supportsLoadBalancing() bool {
 }
 
 // Status is specified in the Instance interface.
-func (azInstance *azureInstance) Status() string {
-	if azInstance.roleInstance == nil {
-		return ""
+func (azInstance *azureInstance) Status() instance.InstanceStatus {
+	message := ""
+	if azInstance.roleInstance != nil {
+		message = azInstance.roleInstance.InstanceStatus
 	}
-	return azInstance.roleInstance.InstanceStatus
+
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: message,
+	}
 }
 
 func (azInstance *azureInstance) serviceName() string {

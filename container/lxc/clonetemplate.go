@@ -56,8 +56,11 @@ func EnsureCloneTemplate(
 	enableOSUpgrades bool,
 	imageURLGetter container.ImageURLGetter,
 	useAUFS bool,
+	callback func(status instance.Status, info string, data map[string]interface{}) error,
 ) (golxc.Container, error) {
 	name := fmt.Sprintf("juju-%s-lxc-template", series)
+
+	// TODO - add deferred call to update instance status with error
 	containerDirectory, err := container.NewDirectory(name)
 	if err != nil {
 		return nil, err
@@ -76,6 +79,8 @@ func EnsureCloneTemplate(
 		return lxcContainer, nil
 	}
 	logger.Infof("template does not exist, creating")
+
+	callback(instance.StatusProvisioning, "Creating template container; downloading image may take some time", nil)
 
 	userData, err := containerinit.TemplateUserData(
 		series,
@@ -151,6 +156,7 @@ func EnsureCloneTemplate(
 		return nil, err
 	}
 	logger.Infof("template container started, now wait for it to stop")
+	callback(instance.StatusProvisioning, "Template container created; waiting for cloud-init to complete", nil)
 	// Perhaps we should wait for it to finish, and the question becomes "how
 	// long do we wait for it to complete?"
 
@@ -170,6 +176,7 @@ func EnsureCloneTemplate(
 	for lxcContainer.IsRunning() {
 		if tailWriter.lastTick().Before(time.Now().Add(-TemplateStopTimeout)) {
 			logger.Infof("not heard anything from the template log for five minutes")
+			callback(instance.StatusProvisioningError, "Container creation failed: template container has not stopped", nil)
 			return nil, fmt.Errorf("template container %q did not stop", name)
 		}
 		time.Sleep(time.Second)

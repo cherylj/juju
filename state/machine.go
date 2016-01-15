@@ -181,6 +181,16 @@ func machineGlobalKey(id string) string {
 	return "m#" + id
 }
 
+// machineGlobalKey returns the global database key for the identified machine.
+func machineGlobalInstanceKey(id string) string {
+	return machineGlobalKey(id) + "#instance"
+}
+
+// globalKey returns the global database key for the machine.
+func (m *Machine) globalInstanceKey() string {
+	return machineGlobalInstanceKey(m.doc.Id)
+}
+
 // globalKey returns the global database key for the machine.
 func (m *Machine) globalKey() string {
 	return machineGlobalKey(m.doc.Id)
@@ -844,12 +854,8 @@ func (m *Machine) Remove() (err error) {
 			Id:     m.doc.DocID,
 			Assert: isDeadDoc,
 		},
-		{
-			C:      instanceDataC,
-			Id:     m.doc.DocID,
-			Remove: true,
-		},
 		removeStatusOp(m.st, m.globalKey()),
+		removeStatusOp(m.st, m.globalInstanceKey()),
 		removeConstraintsOp(m.st, m.globalKey()),
 		removeRequestedNetworksOp(m.st, m.globalKey()),
 		annotationRemoveOp(m.st, m.globalKey()),
@@ -970,36 +976,27 @@ func (m *Machine) InstanceId() (instance.Id, error) {
 
 // InstanceStatus returns the provider specific instance status for this machine,
 // or a NotProvisionedError if instance is not yet provisioned.
-func (m *Machine) InstanceStatus() (string, error) {
-	instData, err := getInstanceData(m.st, m.Id())
-	if errors.IsNotFound(err) {
-		err = errors.NotProvisionedf("machine %v", m.Id())
-	}
+func (m *Machine) InstanceStatus() (StatusInfo, error) {
+	status, err := getStatus(m.st, m.globalInstanceKey(), "instance")
 	if err != nil {
-		return "", err
+		logger.Warningf("--------------- error when retrieving instance status for machine: %s, %v", m.Id(), err)
+		return StatusInfo{}, err
 	}
-	return instData.Status, err
+	logger.Warningf("----------- retrieving instance state as: %+v for %s", status, m.Id())
+	return status, nil
 }
 
 // SetInstanceStatus sets the provider specific instance status for a machine.
-func (m *Machine) SetInstanceStatus(status string) (err error) {
-	defer errors.DeferredAnnotatef(&err, "cannot set instance status for machine %q", m)
+func (m *Machine) SetInstanceStatus(status instance.Status, info string, data map[string]interface{}) (err error) {
+	logger.Warningf("----------- setting instance state to: %s, for %s", status, m.Id())
+	return setStatus(m.st, setStatusParams{
+		badge:     "instance",
+		globalKey: m.globalInstanceKey(),
+		status:    Status(string(status)),
+		message:   info,
+		rawData:   data,
+	})
 
-	ops := []txn.Op{
-		{
-			C:      instanceDataC,
-			Id:     m.doc.DocID,
-			Assert: txn.DocExists,
-			Update: bson.D{{"$set", bson.D{{"status", status}}}},
-		},
-	}
-
-	if err = m.st.runTransaction(ops); err == nil {
-		return nil
-	} else if err != txn.ErrAborted {
-		return err
-	}
-	return errors.NotProvisionedf("machine %v", m.Id())
 }
 
 // AvailabilityZone returns the provier-specific instance availability
@@ -1664,7 +1661,22 @@ func (m *Machine) SetConstraints(cons constraints.Value) (err error) {
 
 // Status returns the status of the machine.
 func (m *Machine) Status() (StatusInfo, error) {
-	return getStatus(m.st, m.globalKey(), "machine")
+	status, err := getStatus(m.st, m.globalKey(), "machine")
+	if err != nil {
+		logger.Warningf("--------- cannot get status for machine: %s: %v", m.Id(), err)
+		return status, err
+	}
+	if status.Status == StatusPending {
+		instStatus, err := getStatus(m.st, m.globalInstanceKey(), "instance")
+		if err != nil {
+			logger.Warningf("---------- returning a status of :( : %+v", status)
+			return status, err
+		}
+		status.Message = instStatus.Message
+	}
+
+	logger.Warningf("---------- returning a status of: %+v", status)
+	return status, nil
 }
 
 // SetStatus sets the status of the machine.

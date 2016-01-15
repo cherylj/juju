@@ -2392,7 +2392,7 @@ func (sm startMissingMachine) step(c *gc.C, ctx *context) {
 	_, hc := testing.AssertStartInstanceWithConstraints(c, ctx.env, m.Id(), cons)
 	err = m.SetProvisioned("i-missing", "fake_nonce", hc)
 	c.Assert(err, jc.ErrorIsNil)
-	err = m.SetInstanceStatus("missing")
+	err = m.SetInstanceStatus(instance.StatusUnknown, "missing", nil)
 	c.Assert(err, jc.ErrorIsNil)
 }
 

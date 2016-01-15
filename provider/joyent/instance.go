@@ -21,8 +21,12 @@ func (inst *joyentInstance) Id() instance.Id {
 	return instance.Id(inst.machine.Id)
 }
 
-func (inst *joyentInstance) Status() string {
-	return inst.machine.State
+func (inst *joyentInstance) Status() instance.InstanceStatus {
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: inst.machine.State,
+	}
+
 }
 
 func (inst *joyentInstance) Addresses() ([]network.Address, error) {

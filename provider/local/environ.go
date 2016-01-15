@@ -390,7 +390,7 @@ var createContainer = func(env *localEnviron, args environs.StartInstanceParams)
 	storage := &container.StorageConfig{
 		AllowMount: !isLXC || allowLoopMounts,
 	}
-	inst, hardware, err := env.containerManager.CreateContainer(args.InstanceConfig, series, network, storage)
+	inst, hardware, err := env.containerManager.CreateContainer(args.InstanceConfig, series, network, storage, args.StatusCallback)
 	if err != nil {
 		return nil, nil, err
 	}

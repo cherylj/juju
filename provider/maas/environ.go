@@ -1010,7 +1010,10 @@ func (environ *maasEnviron) StartInstance(args environs.StartInstanceParams) (
 		return nil, errors.Errorf("cannot run instances: %v", err)
 	}
 
-	inst := &maasInstance{node}
+	inst := &maasInstance{
+		maasObject:   node,
+		statusGetter: environ.deploymentStatusOne,
+	}
 	defer func() {
 		if err != nil {
 			if err := environ.StopInstances(inst.Id()); err != nil {
@@ -1132,6 +1135,55 @@ func (environ *maasEnviron) waitForNodeDeployment(id instance.Id) error {
 		}
 	}
 	return errors.Errorf("instance %q is started but not deployed", id)
+}
+
+func (environ *maasEnviron) deploymentStatusOne(id instance.Id) (string, string) {
+	results, err := environ.deploymentStatus(id)
+	if err != nil {
+		return "", ""
+	}
+	systemId := extractSystemId(id)
+	substatus := environ.getDeploymentSubstatus(systemId)
+	return results[systemId], substatus
+}
+
+func (environ *maasEnviron) getDeploymentSubstatus(systemId string) string {
+	nodesAPI := environ.getMAASClient().GetSubObject("nodes")
+	result, err := nodesAPI.CallGet("list", nil)
+	if err != nil {
+		logger.Warningf("--123---123---123---123---123 CALL FOR NODE DETAILS FAILED: %s", err)
+		return ""
+	}
+	slices, err := result.GetArray()
+	if err != nil {
+		logger.Warningf("--123---123---123---123---123 GetArray FAILED: %s", err)
+		logger.Warningf("--123---123---123---123---123 GetArray FAILED: %+v", result)
+		return ""
+	}
+	for _, slice := range slices {
+		resultMap, err := slice.GetMap()
+		if err != nil {
+			logger.Warningf("--123---123---123---123---123 GetMap FAILED: %s", err)
+			logger.Warningf("--123---123---123---123---123 GetMap FAILED: %+v", slice)
+			continue
+		}
+		sysId, err := resultMap["system_id"].GetString()
+		if err != nil {
+			logger.Warningf("COULD NOT GET STRING for system_id: %v", resultMap["system_id"])
+			continue
+		}
+		if sysId == systemId {
+			logger.Warningf("########################### Name: %s, action: %s, message: %s", resultMap["substatus_name"], resultMap["substatus_action"], resultMap["substatus_message"])
+			message, err := resultMap["substatus_message"].GetString()
+			if err != nil {
+				logger.Warningf("COULD NOT GET STRING for substatus_message: %v", resultMap["substatus_message"])
+				return ""
+			}
+			return message
+		}
+	}
+
+	return ""
 }
 
 // deploymentStatus returns the deployment state of MAAS instances with
@@ -1361,7 +1413,10 @@ func (environ *maasEnviron) instances(filter url.Values) ([]instance.Instance, e
 		if err != nil {
 			return nil, err
 		}
-		instances[index] = &maasInstance{&node}
+		instances[index] = &maasInstance{
+			maasObject:   &node,
+			statusGetter: environ.deploymentStatusOne,
+		}
 	}
 	return instances, nil
 }

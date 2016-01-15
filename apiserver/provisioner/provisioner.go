@@ -51,6 +51,22 @@ func init() {
 	common.RegisterStandardFacade("Provisioner", 1, NewProvisionerAPI)
 }
 
+type StateMachine interface {
+	state.Entity
+
+	Id() string
+	InstanceId() (instance.Id, error)
+	ProviderAddresses() []network.Address
+	SetProviderAddresses(...network.Address) error
+	InstanceStatus() (state.StatusInfo, error)
+	SetInstanceStatus(instance.Status, string, map[string]interface{}) error
+	String() string
+	Refresh() error
+	Life() state.Life
+	Status() (state.StatusInfo, error)
+	IsManual() (bool, error)
+}
+
 // ProvisionerAPI provides access to the Provisioner API facade.
 type ProvisionerAPI struct {
 	*common.Remover
@@ -1717,6 +1733,39 @@ func (p *ProvisionerAPI) imageMetadataFromDataSources(env environs.Environ, cons
 	}
 
 	return all, nil
+}
+
+func (p *ProvisionerAPI) getOneMachine(tag string) (StateMachine, error) {
+	machineTag, err := names.ParseMachineTag(tag)
+	if err != nil {
+		return nil, err
+	}
+
+	entity, err := p.st.FindEntity(machineTag)
+	if err != nil {
+		return nil, err
+	}
+	machine, ok := entity.(StateMachine)
+	if !ok {
+		return nil, common.NotSupportedError(
+			machineTag, fmt.Sprintf("expected machine, got %T", entity),
+		)
+	}
+	return machine, nil
+}
+
+func (p *ProvisionerAPI) SetInstanceStatus(args params.SetInstancesStatus) (params.ErrorResults, error) {
+	result := params.ErrorResults{
+		Results: make([]params.ErrorResult, len(args.Entities)),
+	}
+	for i, arg := range args.Entities {
+		machine, err := p.getOneMachine(arg.Tag)
+		if err == nil {
+			err = machine.SetInstanceStatus(arg.Status, arg.Message, arg.Data)
+		}
+		result.Results[i].Error = common.ServerError(err)
+	}
+	return result, nil
 }
 
 // metadataList is a convenience type enabling to sort

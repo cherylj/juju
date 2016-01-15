@@ -25,8 +25,11 @@ func (inst *localInstance) Id() instance.Id {
 }
 
 // Status implements instance.Instance.Status.
-func (inst *localInstance) Status() string {
-	return ""
+func (inst *localInstance) Status() instance.InstanceStatus {
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: "",
+	}
 }
 
 func (inst *localInstance) Addresses() ([]network.Address, error) {

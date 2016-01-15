@@ -61,6 +61,8 @@ type StartInstanceParams struct {
 	// ImageMetadata is a collection of image metadata
 	// that may be used to start this instance.
 	ImageMetadata []*imagemetadata.ImageMetadata
+
+	StatusCallback func(status instance.Status, info string, data map[string]interface{}) error
 }
 
 // StartInstanceResult holds the result of an

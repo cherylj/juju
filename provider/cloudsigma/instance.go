@@ -27,10 +27,14 @@ func (i sigmaInstance) Id() instance.Id {
 }
 
 // Status returns the provider-specific status for the instance.
-func (i sigmaInstance) Status() string {
+func (i sigmaInstance) Status() instance.InstanceStatus {
 	status := i.server.Status()
 	logger.Tracef("sigmaInstance.Status: %s", status)
-	return status
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: status,
+	}
+
 }
 
 // Addresses returns a list of hostnames or ip addresses

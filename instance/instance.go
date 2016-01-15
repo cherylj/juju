@@ -9,13 +9,30 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/juju/juju/network"
 	"github.com/juju/utils/arch"
+
+	"github.com/juju/juju/network"
 )
 
 // An instance Id is a provider-specific identifier associated with an
 // instance (physical or virtual machine allocated in the provider).
 type Id string
+
+type Status string
+
+type InstanceStatus struct {
+	Status  Status
+	Message string
+}
+
+const (
+	StatusPending           Status = "pending"
+	StatusProvisioning      Status = "allocating"
+	StatusRunning           Status = "running"
+	StatusProvisioningError Status = "provisioning error"
+	StatusStopped           Status = "stopped"
+	StatusUnknown           Status = "unknown"
+)
 
 // UnknownId can be used to explicitly specify the instance ID does not matter.
 const UnknownId Id = ""
@@ -26,7 +43,7 @@ type Instance interface {
 	Id() Id
 
 	// Status returns the provider-specific status for the instance.
-	Status() string
+	Status() InstanceStatus
 
 	// Addresses returns a list of hostnames or ip addresses
 	// associated with the instance.

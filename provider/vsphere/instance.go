@@ -34,9 +34,12 @@ func (inst *environInstance) Id() instance.Id {
 }
 
 // Status implements instance.Instance.
-func (inst *environInstance) Status() string {
+func (inst *environInstance) Status() instance.InstanceStatus {
 	//return inst.base.Status()
-	return ""
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: "",
+	}
 }
 
 // Addresses implements instance.Instance.

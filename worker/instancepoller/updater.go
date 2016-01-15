@@ -37,8 +37,8 @@ type machine interface {
 	InstanceId() (instance.Id, error)
 	ProviderAddresses() ([]network.Address, error)
 	SetProviderAddresses(...network.Address) error
-	InstanceStatus() (string, error)
-	SetInstanceStatus(status string) error
+	InstanceStatus() (params.StatusResult, error)
+	SetInstanceStatus(instance.Status, string, map[string]interface{}) error
 	String() string
 	Refresh() error
 	Life() params.Life
@@ -48,7 +48,7 @@ type machine interface {
 
 type instanceInfo struct {
 	addresses []network.Address
-	status    string
+	status    instance.InstanceStatus
 }
 
 type machineContext interface {
@@ -205,13 +205,15 @@ func machineLoop(context machineContext, m machine, changed <-chan struct{}) err
 					machineStatus = statusInfo.Status
 				}
 			}
-			if len(instInfo.addresses) > 0 && instInfo.status != "" && machineStatus == params.StatusStarted {
-				// We've got at least one address and a status and instance is started, so poll infrequently.
-				pollInterval = LongPoll
-			} else if pollInterval < LongPoll {
-				// We have no addresses or not started - poll increasingly rarely
-				// until we do.
-				pollInterval = time.Duration(float64(pollInterval) * ShortPollBackoff)
+			if instInfo.status.Status != instance.StatusProvisioning && instInfo.status.Status != instance.StatusPending {
+				if len(instInfo.addresses) > 0 && machineStatus == params.StatusStarted {
+					// We've got at least one address and a status and instance is started, so poll infrequently.
+					pollInterval = LongPoll
+				} else if pollInterval < LongPoll {
+					// We have no addresses or not started - poll increasingly rarely
+					// until we do.
+					pollInterval = time.Duration(float64(pollInterval) * ShortPollBackoff)
+				}
 			}
 			pollInstance = false
 		}
@@ -251,16 +253,20 @@ func pollInstanceInfo(context machineContext, m machine) (instInfo instanceInfo,
 		logger.Warningf("cannot get instance info for instance %q: %v", instId, err)
 		return instInfo, nil
 	}
-	currentInstStatus, err := m.InstanceStatus()
+	instStat, err := m.InstanceStatus()
 	if err != nil {
 		// This should never occur since the machine is provisioned.
 		// But just in case, we reset polled status so we try again next time.
 		logger.Warningf("cannot get current instance status for machine %v: %v", m.Id(), err)
-		instInfo.status = ""
+		instInfo.status = instance.InstanceStatus{instance.StatusUnknown, ""}
 	} else {
+		currentInstStatus := instance.InstanceStatus{
+			Status:  instance.Status(string(instStat.Status)),
+			Message: instStat.Info,
+		}
 		if instInfo.status != currentInstStatus {
 			logger.Infof("machine %q instance status changed from %q to %q", m.Id(), currentInstStatus, instInfo.status)
-			if err = m.SetInstanceStatus(instInfo.status); err != nil {
+			if err = m.SetInstanceStatus(instInfo.status.Status, instInfo.status.Message, nil); err != nil {
 				logger.Errorf("cannot set instance status on %q: %v", m, err)
 			}
 		}

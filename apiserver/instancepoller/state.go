@@ -16,8 +16,8 @@ type StateMachine interface {
 	InstanceId() (instance.Id, error)
 	ProviderAddresses() []network.Address
 	SetProviderAddresses(...network.Address) error
-	InstanceStatus() (string, error)
-	SetInstanceStatus(status string) error
+	InstanceStatus() (state.StatusInfo, error)
+	SetInstanceStatus(instance.Status, string, map[string]interface{}) error
 	String() string
 	Refresh() error
 	Life() state.Life

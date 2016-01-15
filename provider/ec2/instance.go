@@ -29,8 +29,12 @@ func (inst *ec2Instance) Id() instance.Id {
 	return instance.Id(inst.InstanceId)
 }
 
-func (inst *ec2Instance) Status() string {
-	return inst.State.Name
+func (inst *ec2Instance) Status() instance.InstanceStatus {
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: inst.State.Name,
+	}
+
 }
 
 // Addresses implements network.Addresses() returning generic address

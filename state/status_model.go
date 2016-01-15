@@ -53,6 +53,11 @@ const (
 	StatusStarted Status = "started"
 )
 
+// Status values specific to instances.
+const (
+	StatusProvisioningError = "provisioning error"
+)
+
 // Status values specific to machine agents.
 const (
 

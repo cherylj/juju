@@ -17,8 +17,11 @@ func (manualBootstrapInstance) Id() instance.Id {
 	return BootstrapInstanceId
 }
 
-func (manualBootstrapInstance) Status() string {
-	return ""
+func (manualBootstrapInstance) Status() instance.InstanceStatus {
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: "",
+	}
 }
 
 func (manualBootstrapInstance) Refresh() error {

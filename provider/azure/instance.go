@@ -34,13 +34,17 @@ func (inst *azureInstance) Id() instance.Id {
 }
 
 // Status is specified in the Instance interface.
-func (inst *azureInstance) Status() string {
+func (inst *azureInstance) Status() instance.InstanceStatus {
 	// NOTE(axw) ideally we would use the power state, but that is only
 	// available when using the "instance view". Instance view is only
 	// delivered when explicitly requested, and you can only request it
 	// when querying a single VM. This means the results of AllInstances
 	// or Instances would have the instance view missing.
-	return to.String(inst.Properties.ProvisioningState)
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: to.String(inst.Properties.ProvisioningState),
+	}
+
 }
 
 // setInstanceAddresses queries Azure for the NICs and public IPs associated

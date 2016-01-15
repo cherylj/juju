@@ -609,6 +609,7 @@ func constructStartInstanceParams(
 		Volumes:           volumes,
 		SubnetsToZones:    subnetsToZones,
 		ImageMetadata:     possibleImageMetadata,
+		StatusCallback:    machine.SetInstanceStatus,
 	}, nil
 }
 

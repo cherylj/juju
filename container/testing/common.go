@@ -77,7 +77,7 @@ func CreateContainerWithMachineAndNetworkAndStorageConfig(
 		name := "test-" + names.NewMachineTag(instanceConfig.MachineId).String()
 		EnsureLXCRootFSEtcNetwork(c, name)
 	}
-	inst, hardware, err := manager.CreateContainer(instanceConfig, "quantal", networkConfig, storageConfig)
+	inst, hardware, err := manager.CreateContainer(instanceConfig, "quantal", networkConfig, storageConfig, nil)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(hardware, gc.NotNil)
 	c.Assert(hardware.String(), gc.Not(gc.Equals), "")
@@ -121,7 +121,7 @@ func CreateContainerTest(c *gc.C, manager container.Manager, machineId string) (
 	network := container.BridgeNetworkConfig("nic42", 0, nil)
 	storage := &container.StorageConfig{}
 
-	inst, hardware, err := manager.CreateContainer(instanceConfig, "quantal", network, storage)
+	inst, hardware, err := manager.CreateContainer(instanceConfig, "quantal", network, storage, nil)
 
 	if err != nil {
 		return nil, errors.Trace(err)

@@ -410,8 +410,11 @@ func (inst *openstackInstance) Id() instance.Id {
 	return instance.Id(inst.getServerDetail().Id)
 }
 
-func (inst *openstackInstance) Status() string {
-	return inst.getServerDetail().Status
+func (inst *openstackInstance) Status() instance.InstanceStatus {
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: inst.getServerDetail().Status,
+	}
 }
 
 func (inst *openstackInstance) hardwareCharacteristics() *instance.HardwareCharacteristics {

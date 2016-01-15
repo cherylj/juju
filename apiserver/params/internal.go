@@ -362,8 +362,10 @@ type SetStatus struct {
 
 // InstanceStatus holds an entity tag and instance status.
 type InstanceStatus struct {
-	Tag    string
-	Status string
+	Tag     string
+	Status  instance.Status
+	Message string
+	Data    map[string]interface{}
 }
 
 // SetInstancesStatus holds parameters for making a

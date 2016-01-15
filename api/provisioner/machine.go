@@ -68,6 +68,18 @@ func (m *Machine) ProvisioningInfo() (*params.ProvisioningInfo, error) {
 	return result.Result, nil
 }
 
+func (m *Machine) SetInstanceStatus(status instance.Status, message string, data map[string]interface{}) error {
+	var result params.ErrorResults
+	args := params.SetInstancesStatus{Entities: []params.InstanceStatus{
+		{Tag: m.tag.String(), Status: status, Message: message, Data: data},
+	}}
+	err := m.st.facade.FacadeCall("SetInstanceStatus", args, &result)
+	if err != nil {
+		return err
+	}
+	return result.OneError()
+}
+
 // SetStatus sets the status of the machine.
 func (m *Machine) SetStatus(status params.Status, info string, data map[string]interface{}) error {
 	var result params.ErrorResults

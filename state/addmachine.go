@@ -179,6 +179,7 @@ func (st *State) AddMachines(templates ...MachineTemplate) (_ []*Machine, err er
 			return nil, errors.Trace(err)
 		}
 		mdocs = append(mdocs, mdoc)
+		logger.Warningf("------------------ appending doc for id: %v", mdoc.DocID)
 		ms = append(ms, newMachine(st, mdoc))
 		ops = append(ops, addOps...)
 	}
@@ -191,6 +192,7 @@ func (st *State) AddMachines(templates ...MachineTemplate) (_ []*Machine, err er
 	if err := st.runTransaction(ops); err != nil {
 		return nil, onAbort(err, errors.New("environment is no longer alive"))
 	}
+	logger.Warningf("----------- AddMachines inserted the doc")
 	return ms, nil
 }
 
@@ -485,15 +487,22 @@ func (st *State) insertNewMachineOps(mdoc *machineDoc, template MachineTemplate)
 		Insert: mdoc,
 	}
 
-	statusDoc := statusDoc{
+	machineStatusDoc := statusDoc{
+		Status:  StatusPending,
+		EnvUUID: st.EnvironUUID(),
+		Updated: time.Now().UnixNano(),
+	}
+	instanceStatusDoc := statusDoc{
 		Status:  StatusPending,
 		EnvUUID: st.EnvironUUID(),
 		Updated: time.Now().UnixNano(),
 	}
 	globalKey := machineGlobalKey(mdoc.Id)
+	globalInstanceKey := machineGlobalInstanceKey(mdoc.Id)
 	prereqOps = []txn.Op{
 		createConstraintsOp(st, globalKey, template.Constraints),
-		createStatusOp(st, globalKey, statusDoc),
+		createStatusOp(st, globalKey, machineStatusDoc),
+		createStatusOp(st, globalInstanceKey, instanceStatusDoc),
 		// TODO(dimitern) 2014-04-04 bug #1302498
 		// Once we can add networks independently of machine
 		// provisioning, we should check the given networks are valid
@@ -525,7 +534,8 @@ func (st *State) insertNewMachineOps(mdoc *machineDoc, template MachineTemplate)
 	// history entry. This is risky, and may lead to extra entries, but that's
 	// an intrinsic problem with mixing txn and non-txn ops -- we can't sync
 	// them cleanly.
-	probablyUpdateStatusHistory(st, globalKey, statusDoc)
+	probablyUpdateStatusHistory(st, globalKey, machineStatusDoc)
+	probablyUpdateStatusHistory(st, globalInstanceKey, instanceStatusDoc)
 	return prereqOps, machineOp, nil
 }
 

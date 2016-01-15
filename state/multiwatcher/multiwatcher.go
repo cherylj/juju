@@ -9,12 +9,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/juju/loggo"
 	"gopkg.in/juju/charm.v6-unstable"
 
 	"github.com/juju/juju/constraints"
 	"github.com/juju/juju/instance"
 	"github.com/juju/juju/network"
 )
+
+var logger = loggo.GetLogger("juju.state.multiwatcher")
 
 // Life describes the lifecycle state of an entity ("alive", "dying"
 // or "dead").
@@ -107,6 +110,7 @@ func (d *Delta) UnmarshalJSON(data []byte) error {
 	case "action":
 		d.Entity = new(ActionInfo)
 	default:
+		logger.Warningf("----------------- Unexpected entity name %q", entityKind)
 		return fmt.Errorf("Unexpected entity name %q", entityKind)
 	}
 	return json.Unmarshal(elements[2], &d.Entity)

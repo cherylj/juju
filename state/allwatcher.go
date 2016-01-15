@@ -152,7 +152,13 @@ func (m *backingMachine) updated(st *State, store *multiwatcherStore, id string)
 	if oldInfo == nil {
 		// We're adding the entry for the first time,
 		// so fetch the associated machine status.
-		statusInfo, err := getStatus(st, machineGlobalKey(m.Id), "machine")
+		entity, err := st.FindEntity(names.NewMachineTag(m.Id))
+		if err != nil {
+			logger.Warningf("++++++++++ Unable to get machine from id: %v: %v", m.Id, err)
+			return err
+		}
+		machine := entity.(*Machine)
+		statusInfo, err := machine.Status()
 		if err != nil {
 			return err
 		}
@@ -643,6 +649,7 @@ func (s *backingStatus) updated(st *State, store *multiwatcherStore, id string) 
 		newInfo.StatusData = normaliseStatusData(s.StatusData)
 		info0 = &newInfo
 	default:
+		logger.Warningf("+++++++++++++++++++++++status for unexpected entity with id %q; type %T", id, info)
 		return errors.Errorf("status for unexpected entity with id %q; type %T", id, info)
 	}
 	store.Update(info0)

@@ -15,7 +15,8 @@ import (
 )
 
 type maasInstance struct {
-	maasObject *gomaasapi.MAASObject
+	maasObject   *gomaasapi.MAASObject
+	statusGetter func(instance.Id) (string, string)
 }
 
 var _ instance.Instance = (*maasInstance)(nil)
@@ -43,13 +44,31 @@ func maasObjectId(maasObject *gomaasapi.MAASObject) instance.Id {
 	return instance.Id(maasObject.URI().String())
 }
 
-func (mi *maasInstance) Status() string {
-	// MAAS does not track node status once they're allocated.
-	// Since any instance that juju knows about will be an
-	// allocated one, it doesn't make sense to report any
-	// state unless we obtain it through some means other than
-	// through the MAAS API.
-	return ""
+func (mi *maasInstance) Status() instance.InstanceStatus {
+	status := instance.StatusUnknown
+	statusMsg, substatus := mi.statusGetter(mi.Id())
+	switch statusMsg {
+	case "":
+		logger.Debugf("unable to obtain status of instance %s", mi.Id())
+		statusMsg = "error in getting status"
+	case "Deployed":
+		status = instance.StatusRunning
+	case "Deploying":
+		status = instance.StatusProvisioning
+		if substatus != "" {
+			statusMsg = fmt.Sprintf("%s: %s", statusMsg, substatus)
+		}
+	case "Failed Deployment":
+		status = instance.StatusProvisioningError
+		if substatus != "" {
+			statusMsg = fmt.Sprintf("%s: %s", statusMsg, substatus)
+		}
+	}
+
+	return instance.InstanceStatus{
+		Status:  status,
+		Message: statusMsg,
+	}
 }
 
 func (mi *maasInstance) Addresses() ([]network.Address, error) {

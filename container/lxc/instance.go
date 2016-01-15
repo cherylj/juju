@@ -26,10 +26,13 @@ func (lxc *lxcInstance) Id() instance.Id {
 }
 
 // Status implements instance.Instance.Status.
-func (lxc *lxcInstance) Status() string {
+func (lxc *lxcInstance) Status() instance.InstanceStatus {
 	// On error, the state will be "unknown".
 	state, _, _ := lxc.Info()
-	return string(state)
+	return instance.InstanceStatus{
+		Status:  instance.StatusUnknown,
+		Message: string(state),
+	}
 }
 
 func (*lxcInstance) Refresh() error {

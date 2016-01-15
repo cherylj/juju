@@ -418,6 +418,7 @@ func processMachines(idToMachines map[string][]*state.Machine) map[string]params
 }
 
 func makeMachineStatus(machine *state.Machine) (status params.MachineStatus) {
+	var err error
 	status.Id = machine.Id()
 	agentStatus, compatStatus := processMachine(machine)
 	status.Agent = agentStatus
@@ -433,13 +434,15 @@ func makeMachineStatus(machine *state.Machine) (status params.MachineStatus) {
 	status.Jobs = paramsJobsFromJobs(machine.Jobs())
 	status.WantsVote = machine.WantsVote()
 	status.HasVote = machine.HasVote()
+	instanceState, err := machine.InstanceStatus()
+	if err != nil {
+		status.InstanceState = "error"
+	} else {
+		status.InstanceState = string(instanceState.Status)
+	}
 	instid, err := machine.InstanceId()
 	if err == nil {
 		status.InstanceId = instid
-		status.InstanceState, err = machine.InstanceStatus()
-		if err != nil {
-			status.InstanceState = "error"
-		}
 		addr, err := machine.PublicAddress()
 		if err != nil {
 			// Usually this indicates that no addresses have been set on the
@@ -778,7 +781,7 @@ func processMachine(machine *state.Machine) (out params.AgentStatus, compat para
 	if out.Err != nil {
 		return
 	}
-	if out.Status == params.StatusPending {
+	if out.Status == params.StatusPending || out.Status == params.StatusAllocating {
 		// The status is pending - there's no point
 		// in enquiring about the agent liveness.
 		return
