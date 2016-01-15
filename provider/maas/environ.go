@@ -1151,29 +1151,22 @@ func (environ *maasEnviron) getDeploymentSubstatus(systemId string) string {
 	nodesAPI := environ.getMAASClient().GetSubObject("nodes")
 	result, err := nodesAPI.CallGet("list", nil)
 	if err != nil {
-		logger.Warningf("--123---123---123---123---123 CALL FOR NODE DETAILS FAILED: %s", err)
 		return ""
 	}
 	slices, err := result.GetArray()
 	if err != nil {
-		logger.Warningf("--123---123---123---123---123 GetArray FAILED: %s", err)
-		logger.Warningf("--123---123---123---123---123 GetArray FAILED: %+v", result)
 		return ""
 	}
 	for _, slice := range slices {
 		resultMap, err := slice.GetMap()
 		if err != nil {
-			logger.Warningf("--123---123---123---123---123 GetMap FAILED: %s", err)
-			logger.Warningf("--123---123---123---123---123 GetMap FAILED: %+v", slice)
 			continue
 		}
 		sysId, err := resultMap["system_id"].GetString()
 		if err != nil {
-			logger.Warningf("COULD NOT GET STRING for system_id: %v", resultMap["system_id"])
 			continue
 		}
 		if sysId == systemId {
-			logger.Warningf("########################### Name: %s, action: %s, message: %s", resultMap["substatus_name"], resultMap["substatus_action"], resultMap["substatus_message"])
 			message, err := resultMap["substatus_message"].GetString()
 			if err != nil {
 				logger.Warningf("COULD NOT GET STRING for substatus_message: %v", resultMap["substatus_message"])
