@@ -269,14 +269,21 @@ func pollInstanceInfo(context machineContext, m machine) (instInfo instanceInfo,
 			}
 		}
 	}
-	providerAddresses, err := m.ProviderAddresses()
-	if err != nil {
-		return instInfo, err
-	}
-	if !addressesEqual(providerAddresses, instInfo.addresses) {
-		logger.Infof("machine %q has new addresses: %v", m.Id(), instInfo.addresses)
-		if err = m.SetProviderAddresses(instInfo.addresses...); err != nil {
-			logger.Errorf("cannot set addresses on %q: %v", m, err)
+
+	if statusInfo, err := m.Status(); err != nil {
+		logger.Warningf("cannot get current machine status for machine %v: %v", m.Id(), err)
+	} else if statusInfo.Status == params.StatusStarted {
+		// Bug 1541473 - Don't update the addresses until the instance is started
+		// to avoid updating replicasets before the machine comes up.
+		providerAddresses, err := m.ProviderAddresses()
+		if err != nil {
+			return instInfo, err
+		}
+		if !addressesEqual(providerAddresses, instInfo.addresses) {
+			logger.Infof("machine %q has new addresses: %v", m.Id(), instInfo.addresses)
+			if err = m.SetProviderAddresses(instInfo.addresses...); err != nil {
+				logger.Errorf("cannot set addresses on %q: %v", m, err)
+			}
 		}
 	}
 	return instInfo, err
