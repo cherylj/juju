@@ -64,6 +64,12 @@ func NewRegisterCommandForTest(apiOpen api.OpenFunc, refreshModels func(jujuclie
 	return &registerCommand{apiOpen: apiOpen, refreshModels: refreshModels, store: store}
 }
 
+// NewUnregisterCommandForTest returns a UnregisterCommand with the store
+// mocked out.
+func NewUnregisterCommandForTest(store jujuclient.ClientStore) *unregisterCommand {
+	return &unregisterCommand{store: store}
+}
+
 // NewRemoveBlocksCommandForTest returns a RemoveBlocksCommand with the
 // function used to open the API connection mocked out.
 func NewRemoveBlocksCommandForTest(api removeBlocksAPI, store jujuclient.ClientStore) cmd.Command {
