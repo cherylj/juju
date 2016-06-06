@@ -16,9 +16,11 @@ import (
 )
 
 // NewUnregisterCommand returns a command to allow the user to unregister a controller.
-func NewUnregisterCommand() cmd.Command {
-	cmd := &unregisterCommand{}
-	cmd.store = jujuclient.NewFileClientStore()
+func NewUnregisterCommand(store jujuclient.ClientStore) cmd.Command {
+	if store == nil {
+		panic("must specify a valid store")
+	}
+	cmd := &unregisterCommand{store: store}
 	return modelcmd.WrapBase(cmd)
 }
 

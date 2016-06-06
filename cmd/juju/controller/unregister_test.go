@@ -58,7 +58,7 @@ func (s *UnregisterSuite) resetControllers() {
 }
 
 func (s *UnregisterSuite) TestInit(c *gc.C) {
-	unregisterCommand := controller.NewUnregisterCommandForTest(nil)
+	unregisterCommand := controller.NewUnregisterCommand(s.store)
 
 	err := testing.InitCommand(unregisterCommand, []string{})
 	c.Assert(err, gc.ErrorMatches, "controller name must be specified")
@@ -68,7 +68,7 @@ func (s *UnregisterSuite) TestInit(c *gc.C) {
 }
 
 func (s *UnregisterSuite) TestUnregisterUnknownController(c *gc.C) {
-	command := controller.NewUnregisterCommandForTest(s.store)
+	command := controller.NewUnregisterCommand(s.store)
 	_, err := testing.RunCommand(c, command, "fake3")
 
 	c.Assert(err, jc.Satisfies, errors.IsNotFound)
@@ -76,7 +76,7 @@ func (s *UnregisterSuite) TestUnregisterUnknownController(c *gc.C) {
 }
 
 func (s *UnregisterSuite) TestUnregisterCurrentController(c *gc.C) {
-	command := controller.NewUnregisterCommandForTest(s.store)
+	command := controller.NewUnregisterCommand(s.store)
 	_, err := testing.RunCommand(c, command, "fake1", "-y")
 
 	c.Assert(err, jc.ErrorIsNil)
@@ -92,7 +92,7 @@ func (s *UnregisterSuite) TestUnregisterCurrentController(c *gc.C) {
 }
 
 func (s *UnregisterSuite) TestUnregisterNonCurrentController(c *gc.C) {
-	command := controller.NewUnregisterCommandForTest(s.store)
+	command := controller.NewUnregisterCommand(s.store)
 	_, err := testing.RunCommand(c, command, "fake2", "-y")
 	c.Assert(err, jc.ErrorIsNil)
 
@@ -125,7 +125,7 @@ func (s *UnregisterSuite) TestUnregisterCommandConfirmation(c *gc.C) {
 
 	// Ensure confirmation is requested if "-y" is not specified.
 	stdin.WriteString("n")
-	_, errc := cmdtesting.RunCommand(ctx, controller.NewUnregisterCommandForTest(s.store), "fake1")
+	_, errc := cmdtesting.RunCommand(ctx, controller.NewUnregisterCommand(s.store), "fake1")
 	select {
 	case err := <-errc:
 		c.Check(err, gc.ErrorMatches, "controller unregistration: aborted")
@@ -141,7 +141,7 @@ func (s *UnregisterSuite) TestUnregisterCommandConfirmation(c *gc.C) {
 		stdin.Reset()
 		stdout.Reset()
 		stdin.WriteString(answer)
-		_, errc := cmdtesting.RunCommand(ctx, controller.NewUnregisterCommandForTest(s.store), "fake1")
+		_, errc := cmdtesting.RunCommand(ctx, controller.NewUnregisterCommand(s.store), "fake1")
 		select {
 		case err := <-errc:
 			c.Check(err, jc.ErrorIsNil)
