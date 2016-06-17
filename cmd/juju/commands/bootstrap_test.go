@@ -396,6 +396,21 @@ func (s *BootstrapSuite) TestBootstrapSetsCurrentModel(c *gc.C) {
 	c.Assert(modelName, gc.Equals, "default")
 }
 
+func (s *BootstrapSuite) TestBootstrapPassesControllerUUID(c *gc.C) {
+	s.patchVersionAndSeries(c, "raring")
+
+	var bootstrap fakeBootstrapFuncs
+	s.PatchValue(&getBootstrapFuncs, func() BootstrapInterface {
+		return &bootstrap
+	})
+
+	coretesting.RunCommand(
+		c, s.newBootstrapCommand(),
+		"devcontroller", "dummy",
+	)
+	c.Assert(utils.IsValidUUIDString(bootstrap.args.ControllerUUID), jc.IsTrue)
+}
+
 func (s *BootstrapSuite) TestBootstrapDefaultModel(c *gc.C) {
 	s.patchVersionAndSeries(c, "raring")
 

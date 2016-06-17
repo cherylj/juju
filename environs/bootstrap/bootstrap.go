@@ -144,6 +144,11 @@ func Bootstrap(ctx environs.BootstrapContext, environ environs.Environ, args Boo
 	if controllerUUID == "" {
 		return errors.Errorf("bootstrap configuration has no controller UUID")
 	}
+
+	if controllerUUID != args.ControllerUUID {
+		return errors.Errorf("controller config UUID does not match specified controller UUID")
+	}
+
 	if _, hasCACert := controllerCfg.CACert(); !hasCACert {
 		return errors.Errorf("model configuration has no ca-cert")
 	}
